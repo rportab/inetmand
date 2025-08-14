@@ -1,0 +1,2 @@
+# inetmand
+Internet Manager Server
