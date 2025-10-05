@@ -82,10 +82,6 @@ CONFIG_SECTIONS = {
 # Update the label every X seconds.
 INTERVAL = 1
 
-# Command used to check if the interface is up.  The %s placeholder (mandatory!)
-# is replaced with the interface.  The command must return 0 in case of success.
-IF_CHECK_CMD = 'ifconfig %s'
-
 PRG_NAME = 'inetman'
 RUNPON_HELP = """%s [%s] - runs pon/poff scripts.
          Based on RunPON: http://erlug.linux.it/~da/soft/runpon/
@@ -310,17 +306,29 @@ class Observable(defaultdict):
 def connect(wait=False):
     if not connected():
         executeCommand(config.getValue('on', None, 'pon'))
-        if wait:
-            while not connected():
-                time.sleep(1)
+        while wait and not connected(timeout=20):
+            pass
+
 
 def disconnect():
     if connected():
         executeCommand(config.getValue('off', None, 'poff'))
 
-def connected():
-    status, output = executeCommand(IF_CHECK_CMD % config.getValue('check_interface'), _force = True)
-    return status == 0
+
+def wait_for_iface(dev, timeout=20, interval=1.0):
+    # Check sysfs presence to avoid racing netifd
+    path = f"/sys/class/net/{dev}"
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if os.path.exists(path):
+            return True
+        time.sleep(interval)
+    return False
+
+
+def connected(timeout=1):
+    return wait_for_iface(config.getValue('check_interface'), timeout=timeout)
+
 
 if __name__ == '__main__':
     """Things to do when called by the command line."""
