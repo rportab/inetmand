@@ -22,28 +22,23 @@ import os
 import sys
 import time
 import logging
-import subprocess
 import configparser
-import warnings
 from collections import defaultdict
-import shlex
 
 __version__ = VERSION = '0.5'
 
 
 # If True, it doesn't execute any command.
 DONT_RUN = False
-#DONT_RUN = True
+
 # Logging facility.
 _LOGGING_LEVELS = {'critical': logging.CRITICAL,
         'error': logging.ERROR,
         'warning': logging.WARNING,
         'info': logging.INFO,
         'debug': logging.DEBUG}
-#logging.basicConfig(level=logging.DEBUG, filename='/tmp/runpon.log')
 
 # Where the configuration file resides.
-#CONFIG_DIR = os.path.join('~', '.config', 'runpon')
 CONFIG_DIR = '/opt/inetman'
 CONFIG_FILE = os.path.join(CONFIG_DIR, 'inetman.cfg')
 
@@ -122,7 +117,7 @@ class RunPONConfigParser(configparser.ConfigParser):
                 except Exception:
                     return default
             return value
-        except ConfigParser.Error:
+        except configparser.Error:
             return default
 
     def setValue(self, option, value):
@@ -138,7 +133,7 @@ class RunPONConfigParser(configparser.ConfigParser):
             active = self.get('DEFAULT', 'active')
             if not self.has_section(active):
                 active = 'DEFAULT'
-        except ConfigParser.Error:
+        except configparser.Error:
             active = 'DEFAULT'
         return active
 
@@ -146,7 +141,7 @@ class RunPONConfigParser(configparser.ConfigParser):
         """Add a new section, populating it with default values."""
         try:
             self.add_section(section)
-        except ConfigParser.DuplicateSectionError:
+        except configparser.DuplicateSectionError:
             return
         for key, value in CONFIG_DEFAULTS.items():
             self.set(section, key, value)
@@ -174,7 +169,7 @@ def manageConfigFile():
             _gotFile = False
     config = RunPONConfigParser()
     if _gotFile:
-        config.readfp(cfgFile)
+        config.read_file(cfgFile)
     if _creating:
         # Populate the new configuration object.
         for section, options in CONFIG_SECTIONS.items():
@@ -185,27 +180,6 @@ def manageConfigFile():
         if _gotFile:
             config.write(cfgFile)
     return config
-
-
-def get_status_output(*args, **kwargs):
-    p = subprocess.run(*args, **kwargs)
-    return p.returncode, p.stdout
-
-
-
-def executeCommand(cmdLine, _force=False):
-    """Execute the given command line, returning a (status, output) tuple.
-    If an exception is caught, status is set to None and output to a string
-    representing the exception.  If _force is True the command is executed
-    even if DONT_RUN is True."""
-    if DONT_RUN and not _force:
-        logging.info('I WOULD RUN %s' % cmdLine)
-        return 0, ''
-    try:
-        status, output = get_status_output(shlex.split(cmdLine))
-    except Exception as e:
-        status, output = None, str(e)
-    return status, output
 
 
 class Timer(object):
@@ -301,33 +275,6 @@ class Observable(defaultdict):
             # XXX: so far, storing the return is useless.
             #      Catch every exception?
             self[subscriber] = subscriber(*args, **kwds)
-
-
-def connect(wait=False):
-    if not connected():
-        executeCommand(config.getValue('on', None, 'pon'))
-        while wait and not connected(timeout=20):
-            pass
-
-
-def disconnect():
-    if connected():
-        executeCommand(config.getValue('off', None, 'poff'))
-
-
-def wait_for_iface(dev, timeout=20, interval=1.0):
-    # Check sysfs presence to avoid racing netifd
-    path = f"/sys/class/net/{dev}"
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        if os.path.exists(path):
-            return True
-        time.sleep(interval)
-    return False
-
-
-def connected(timeout=1):
-    return wait_for_iface(config.getValue('check_interface'), timeout=timeout)
 
 
 if __name__ == '__main__':
