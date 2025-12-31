@@ -19,10 +19,7 @@ class TestIsConnected(unittest.TestCase):
 class TestConnect(unittest.TestCase):
     os = Mock(spec=OS)
     iface = 'any'
-    config = Mock(spec=RunPONConfigParser)
-
-    def setUp(self):
-        self.config.getValue.return_value = 'any'
+    cmd = []
 
     def tearDown(self):
         self.os.reset_mock()
@@ -33,7 +30,7 @@ class TestConnect(unittest.TestCase):
         connect(
             os=self.os,
             iface=self.iface,
-            config=self.config,
+            cmd=self.cmd,
             wait=False,
         )
 
@@ -46,7 +43,7 @@ class TestConnect(unittest.TestCase):
        connect(
            os=self.os,
            iface=self.iface,
-           config=self.config,
+           cmd=self.cmd,
            wait=False,
        )
 
@@ -59,7 +56,7 @@ class TestConnect(unittest.TestCase):
         connect(
             os=self.os,
             iface=self.iface,
-            config=self.config,
+            cmd=self.cmd,
             wait=True,
         )
 
@@ -70,13 +67,13 @@ class TestDisconnect(unittest.TestCase):
     def test_when_notConnected_then_nothing(self):
         os = Mock(spec=OS)
         iface = 'any'
-        config = Mock(spec=RunPONConfigParser)
+        cmd = []
         os.iface_exists.return_value = False
 
         disconnect(
             os=os,
             iface=iface,
-            config=config,
+            cmd=cmd,
         )
 
         os.run.assert_not_called()
