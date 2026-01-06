@@ -3,7 +3,6 @@ from unittest.mock import Mock
 
 from application.ports.os import OS
 from application.use_cases.connection import is_connected, connect, disconnect
-from inetman import RunPONConfigParser
 
 
 class TestIsConnected(unittest.TestCase):
