@@ -2,7 +2,7 @@ from shlex import split
 
 from application.use_cases import connection
 from inetman import config
-from infrastructure.output.os import LinuxOSImpl
+from infrastructure.driven.os import LinuxOSImpl
 
 # this is intended to be used when called from another program in the same computer
 # adjust to your convenience
